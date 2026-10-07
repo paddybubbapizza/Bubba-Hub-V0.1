@@ -1,0 +1,226 @@
+{
+  "app_name": "Bubba Pizza Hub",
+  "personality": "1 iOS-Native Clean",
+  "personality_one_liner": "A highly readable, operation-focused utility that frames content without dominating it, letting status and data take priority.",
+  "color": {
+    "light": {
+      "surface": "#f5f5f5",
+      "onSurface": "#111111",
+      "surfaceSecondary": "#ffffff",
+      "onSurfaceSecondary": "#111111",
+      "surfaceTertiary": "#e5e5e5",
+      "onSurfaceTertiary": "#111111",
+      "surfaceInverse": "#111111",
+      "onSurfaceInverse": "#ffffff",
+      "brand": "#d7141a",
+      "onBrand": "#ffffff",
+      "brandPrimary": "#d7141a",
+      "onBrandPrimary": "#ffffff",
+      "brandSecondary": "#a10f13",
+      "onBrandSecondary": "#ffffff",
+      "brandTertiary": "#fad4d5",
+      "onBrandTertiary": "#d7141a",
+      "success": "#1d7a46",
+      "onSuccess": "#ffffff",
+      "warning": "#f59e0b",
+      "onWarning": "#ffffff",
+      "error": "#d7141a",
+      "onError": "#ffffff",
+      "info": "#525252",
+      "onInfo": "#ffffff",
+      "border": "#e5e5e5",
+      "borderStrong": "#d4d4d4",
+      "divider": "#e5e5e5",
+      "muted": "#737373"
+    },
+    "dark": {
+      "surface": "#121212",
+      "onSurface": "#f5f5f5",
+      "surfaceSecondary": "#1c1c1c",
+      "onSurfaceSecondary": "#f5f5f5",
+      "surfaceTertiary": "#262626",
+      "onSurfaceTertiary": "#f5f5f5",
+      "surfaceInverse": "#f5f5f5",
+      "onSurfaceInverse": "#111111",
+      "brand": "#ff5a60",
+      "onBrand": "#111111",
+      "brandPrimary": "#ff5a60",
+      "onBrandPrimary": "#111111",
+      "brandSecondary": "#ff8a8e",
+      "onBrandSecondary": "#111111",
+      "brandTertiary": "#3b1114",
+      "onBrandTertiary": "#ff5a60",
+      "success": "#2e9a5a",
+      "onSuccess": "#ffffff",
+      "warning": "#fbbf24",
+      "onWarning": "#111111",
+      "error": "#ff5a60",
+      "onError": "#111111",
+      "info": "#a3a3a3",
+      "onInfo": "#111111",
+      "border": "#262626",
+      "borderStrong": "#404040",
+      "divider": "#262626",
+      "muted": "#a3a3a3"
+    }
+  },
+  "typography": {
+    "displayFontFamily": "Figtree",
+    "textFontFamily": "Figtree",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous comfortable vertical padding. Use md/lg margins around grouped content. No half-width orphans in cards.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs with stack overlays and side drawer for role-management navigation",
+  "icon_set": "Ionicons",
+  "glassmorphism": {
+    "enabled": true,
+    "do_s": [
+      "Use for sticky bottom tabs, sticky header backgrounds, and bottom-sheet handles.",
+      "Ensure text on glass is fully readable by adding a tinted layer underneath."
+    ],
+    "dont_s": [
+      "Do not apply to standard cards, form inputs, or body content regions.",
+      "Do not blur entire screens."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "haptics": {
+    "events": {
+      "primary_button_press": "impactLight",
+      "tab_change": "selection",
+      "form_validation_error": "notificationError",
+      "shift_toggle": "impactMedium",
+      "check_approval": "notificationSuccess"
+    }
+  },
+  "screens": [
+    {
+      "name": "Sign In",
+      "purpose": "Role-based authentication entry point for franchisees and company staff.",
+      "states": {
+        "loading": "Centered spinner",
+        "empty": "N/A",
+        "error": "Toast or inline text above login button with readable message."
+      },
+      "layout": "Centered form (Single column) with logo on top. Inputs with labels above. Primary action button sticky or well above the keyboard (KeyboardAvoidingView). Brand color prominently featured on the button."
+    },
+    {
+      "name": "Home Dashboard",
+      "purpose": "Provide immediate overview of store checks, urgent announcements, and quick actions.",
+      "states": {
+        "loading": "Skeleton loaders for cards and announcements",
+        "empty": "Illustration for 'No Urgent Announcements' or 'All clear'",
+        "error": "Readable message + Retry button taking full screen flex."
+      },
+      "layout": "Hero card at the top displaying welcome message. Quick-action cards in a 2-column grid or single-column stack below. Expandable Announcements list taking bottom half. 'Urgent' tagged items highlighted with error/warning semantic tokens."
+    },
+    {
+      "name": "Store Checks List",
+      "purpose": "A searchable, filterable list of all store checks displaying their review status.",
+      "states": {
+        "loading": "Skeleton list rows",
+        "empty": "Red clipboard icon + 'No store checks yet' + 'Create New Check' button.",
+        "error": "Error loading checks message + Retry button."
+      },
+      "layout": "Sticky glass header with segmented controls (Awaiting, Approved, Returned). List items with a minimum 56pt height containing title, metadata (date), and a status badge on the right. FAB (Floating Action Button) with glass effect for creating new checks."
+    },
+    {
+      "name": "Store Check Form",
+      "purpose": "Execution of a store check with temp readings, checklists, and shift open/close.",
+      "states": {
+        "loading": "Spinner during submission",
+        "empty": "N/A",
+        "error": "Inline validation text explaining specific missing fields."
+      },
+      "layout": "Long scrolling single-column form. Real-time validation. Labels above inputs. Number inputs for temperature readings. Sticky primary 'Submit' CTA at the bottom above safe area. 'Open/Close Shift' segmented toggle prominently at the top."
+    },
+    {
+      "name": "Account Management",
+      "purpose": "Role-based admin view to add, edit, and remove staff/managers/franchisees.",
+      "states": {
+        "loading": "Skeleton list",
+        "empty": "Icon + 'No accounts added yet' + 'Add Account' CTA.",
+        "error": "Failed to fetch accounts + Retry."
+      },
+      "layout": "List view of accounts categorized by role (Tabs or Segmented Control). Bottom sheets used for 'Add/Edit Account' flows rather than separate screens."
+    },
+    {
+      "name": "Store Check Template Management",
+      "purpose": "Edit template structure, store custom layouts, and create new check types.",
+      "states": {
+        "loading": "Skeleton rows",
+        "empty": "Illustration + 'No templates' + 'Create Template' CTA.",
+        "error": "Failed to fetch templates + Retry."
+      },
+      "layout": "List of templates with 'Edit' action leading to a detailed form view. Reorderable list UI for checklist items."
+    },
+    {
+      "name": "Account Settings",
+      "purpose": "Personal details and password modification screen.",
+      "states": {
+        "loading": "Spinner during save",
+        "empty": "N/A",
+        "error": "Toast or inline validation."
+      },
+      "layout": "Standard single-column form with grouped fields. Logout button at the bottom."
+    }
+  ],
+  "images": {
+    "hero_pizza_kitchen": {
+      "url": "https://images.unsplash.com/photo-1651981038189-e71e557f5869?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwxfHxwaXp6YSUyMHJlc3RhdXJhbnQlMjBraXRjaGVufGVufDB8fHx8MTc5MTM1OTk5OXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Pizza restaurant kitchen in action"
+    },
+    "empty_state_clipboard": {
+      "url": "https://images.unsplash.com/photo-1523705480679-b5d0cc17a656?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwxfHxyZWQlMjBjbGlwYm9hcmQlMjBjaGVja2xpc3R8ZW58MHx8fHwxNzkxMzU5OTk5fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Empty clipboard for checklist empty state"
+    },
+    "bubba_pizza_logo": {
+      "url": "https://images.unsplash.com/photo-1615859499328-380adaffddb3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHwxfHxwaXp6YSUyMGJveCUyMHJlZCUyMGxvZ298ZW58MHx8fHwxNzkxMzU5OTk5fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Neon pizza signage representing the brand"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the color tokens for Light and Dark modes. The app supports auto-switching based on system preference.",
+    "Max font weight allowed is 500. Use Figtree for all text elements. Let size carry the hierarchy, not the weight.",
+    "Absolutely NO BLUE allowed. The info token has been set to a neutral gray/slate (#525252/#a3a3a3).",
+    "Use real-time inline validation for forms. Do not rely solely on submission-only errors.",
+    "Place labels above inputs for all form fields, and use proper keyboard types (e.g., numeric for temperatures).",
+    "Implement bottom sheets for editing or creating entities (like Add Account) to preserve context.",
+    "Store Checks form needs a sticky 'Submit' CTA at the bottom outside the scroll view, ensuring it clears the safe area.",
+    "Status colors (success/error/warning) must strictly map to Approved/Returned/Urgent states.",
+    "Ensure all text overlays on images have a vertical gradient scrim (transparent to surfaceInverse) to guarantee WCAG contrast."
+  ]
+}
