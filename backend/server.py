@@ -82,6 +82,10 @@ def item_row(name):
     return {"name": name}
 
 
+def row_hint(r):
+    return f"{r['limit']}°C or colder" if r["limitType"] == "max" else f"{r['limit']}°C or hotter"
+
+
 SEED_TEMPLATES = [
     {
         "name": "Daily Temperature Check", "k": "t", "shift": True, "order": 0,
@@ -241,6 +245,27 @@ class TemplateIn(BaseModel):
 # ---------------------------------------------------------------------------
 # Seed
 # ---------------------------------------------------------------------------
+def synth_entries(type_name: str, store: str, done: int, bad: int):
+    """Build plausible per-row entries for a seeded check."""
+    tmpl = next((t for t in SEED_TEMPLATES if t["name"] == type_name), None)
+    if not tmpl:
+        return []
+    rows = (tmpl.get("overrides", {}) or {}).get(store) or tmpl["rows"]
+    entries = []
+    if tmpl["k"] == "l":
+        for i, r in enumerate(rows):
+            entries.append({"name": r["name"], "done": i < done})
+    else:
+        for i, r in enumerate(rows):
+            ok = i >= bad
+            if r["limitType"] == "max":
+                value = r["limit"] - 1 if ok else r["limit"] + 4
+            else:
+                value = r["limit"] + 2 if ok else r["limit"] - 8
+            entries.append({"name": r["name"], "hint": row_hint(r), "value": value, "ok": ok})
+    return entries
+
+
 async def seed():
     await db.users.create_index("username", unique=True)
     if await db.stores.count_documents({}) == 0:
@@ -264,6 +289,9 @@ async def seed():
         docs = []
         for c in SEED_CHECKS:
             d = dict(c)
+            tmpl = next((t for t in SEED_TEMPLATES if t["name"] == c["type"]), None)
+            d["k"] = tmpl["k"] if tmpl else "t"
+            d["entries"] = synth_entries(c["type"], c["store"], c["done"], c["bad"])
             d["created_at"] = datetime.now(timezone.utc)
             docs.append(d)
         await db.checks.insert_many(docs)
@@ -363,6 +391,7 @@ def serialize_check(c: dict) -> dict:
         "id": str(c["_id"]), "store": c["store"], "type": c["type"], "shift": c.get("shift", ""),
         "by": c["by"], "dateLabel": c["dateLabel"], "done": c["done"], "total": c["total"],
         "bad": c["bad"], "status": c["status"], "rev": c.get("rev", ""), "k": c.get("k", "t"),
+        "entries": c.get("entries", []),
     }
 
 
@@ -393,28 +422,35 @@ async def submit_check(data: CheckSubmitIn, user: dict = Depends(current_user)):
     rows = rows_for(tmpl, data.store)
     total = len(rows)
     bad = 0
+    entries = []
     if tmpl["k"] == "l":
         done = sum(1 for v in data.values if v)
+        for i, row in enumerate(rows):
+            entries.append({"name": row["name"], "done": bool(data.values[i]) if i < len(data.values) else False})
     else:
         for i, row in enumerate(rows):
             try:
                 v = float(data.values[i])
             except (IndexError, TypeError, ValueError):
                 v = None
+            ok = True
             if v is None:
                 bad += 1
-                continue
-            if row["limitType"] == "max":
+                ok = False
+            elif row["limitType"] == "max":
                 if v > row["limit"]:
                     bad += 1
+                    ok = False
             else:
                 if v < row["limit"]:
                     bad += 1
+                    ok = False
+            entries.append({"name": row["name"], "hint": row_hint(row), "value": v, "ok": ok})
         done = total - bad
     doc = {
         "store": data.store, "type": data.type, "shift": data.shift or "",
         "by": user["name"], "dateLabel": "Just now", "done": done, "total": total,
-        "bad": bad, "status": "awaiting", "rev": "", "k": tmpl["k"],
+        "bad": bad, "status": "awaiting", "rev": "", "k": tmpl["k"], "entries": entries,
         "created_at": datetime.now(timezone.utc),
     }
     res = await db.checks.insert_one(doc)

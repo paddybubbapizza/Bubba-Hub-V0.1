@@ -37,10 +37,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="checks"
+        name="tools"
         options={{
-          title: "Checks",
-          tabBarIcon: ({ color, size }) => <Ionicons name="checkbox" size={size} color={color} />,
+          title: "Tools",
+          tabBarIcon: ({ color, size }) => <Ionicons name="grid" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

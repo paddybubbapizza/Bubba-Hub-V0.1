@@ -28,6 +28,10 @@ export type Announcement = {
 
 export type CheckStatus = "awaiting" | "approved" | "returned";
 
+export type TempEntry = { name: string; hint: string; value: number | null; ok: boolean };
+export type ItemEntry = { name: string; done: boolean };
+export type CheckEntry = TempEntry | ItemEntry;
+
 export type Check = {
   id: string;
   store: string;
@@ -41,6 +45,7 @@ export type Check = {
   status: CheckStatus;
   rev: string;
   k: "t" | "l";
+  entries: CheckEntry[];
 };
 
 export type TempRow = { name: string; limitType: "max" | "min"; limit: number };

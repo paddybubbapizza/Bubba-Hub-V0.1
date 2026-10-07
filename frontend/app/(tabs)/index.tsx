@@ -8,7 +8,6 @@ import { api } from "@/src/api/client";
 import { useAuth } from "@/src/auth/auth-context";
 import { Header } from "@/src/components/Header";
 import { Card, Pill } from "@/src/components/ui";
-import { useToast } from "@/src/components/Toast";
 import { makeStyles, useTheme, fonts, spacing, radius } from "@/src/theme";
 import type { Announcement } from "@/src/types";
 
@@ -21,7 +20,6 @@ const QUICK_ACTIONS = [
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
-  const toast = useToast();
   const styles = useStyles();
   const { colors } = useTheme();
 
@@ -33,13 +31,15 @@ export default function Home() {
   const [open, setOpen] = useState<number | null>(0);
 
   const greeting = `Welcome back, ${user?.pref || user?.first || user?.name || ""}`;
-  const storesText = user?.co ? `All ${user.stores.length} stores` : (user?.stores ?? []).join(" · ");
+  const storesText = user?.co ? "Company access" : (user?.stores ?? []).join(" · ");
 
   const onAction = (key: string) => {
     if (key === "checks") {
-      router.push("/(tabs)/checks");
+      router.push("/checks");
+    } else if (key === "incident") {
+      router.push("/incidents");
     } else {
-      toast(`${key === "incident" ? "Incident Reports" : "Training"} is coming next`);
+      router.push("/training");
     }
   };
 
