@@ -48,6 +48,32 @@ export type Check = {
   entries: CheckEntry[];
 };
 
+export type IncidentStatus = "pending" | "completed";
+
+export type Person = { id: string; name: string; role?: string };
+
+export type Incident = {
+  id: string;
+  store: string;
+  urgency: string;
+  type: string;
+  involved: Person[];
+  occurredAt: string;
+  location: string;
+  description: string;
+  actions: string;
+  followUp: boolean;
+  by: string;
+  byId: string | null;
+  dateLabel: string;
+  status: IncidentStatus;
+  rev: string;
+  revNote: string;
+  reviewedLabel: string;
+};
+
+export type IncidentOptions = { urgencies: string[]; types: string[] };
+
 export type TempRow = { name: string; limitType: "max" | "min"; limit: number };
 export type ItemRow = { name: string };
 export type Row = TempRow | ItemRow;

@@ -1,0 +1,37 @@
+{
+  "summary": "Incident Reports feature tested end-to-end. Backend: new /app/backend/tests/test_incidents.py — 15/15 pytest cases pass (options, store people with 403 cross-store, GET /incidents scoping for Company/Franchisee/Staff including a dynamically created Staff account that only sees its own report, POST /incidents happy-path + 400/403 validation, POST /incidents/{id}/review with Staff 403, cross-store franchisee 403, Company success, double-review 400, invalid id 404). Frontend (mobile 390x844, Expo web preview): login as harrypatel → Incident Reports → sees 4 Pending (Croydon+Langwarrin only) and 2 Completed with correct counts. New Incident Report flow: empty-submit shows inline errors + toast ('Choose a store first', 'Choose the type of incident', 'Describe what happened in at least 10 characters'). Filling Croydon/High/Injury/1 person/location/description/actions/follow-up and submitting shows 'Incident report submitted' toast and the new report appears at top of Pending as 'High · Injury · Follow-up · Croydon · Harry Patel · Today 7:57pm'. Opening the row shows the detail screen with description/when/where/actions/involved. 'Mark as completed' opens the bottom sheet, review-note-input + confirm-complete-button triggers 'Report marked as completed' toast and the detail now shows inc-review-note. ONE BUG FOUND: @gorhom/bottom-sheet's BottomSheetTextInput throws a red-screen 'RNTextInput.default.State.currentlyFocusedInput is not a function' on react-native-web (incident/[id].tsx:121) which also drops typed characters (typed 'E2E: looked at it, resolved' → stored 'E2:loe ti,reovd'). Native builds likely unaffected but the web preview is broken for the review note. No deprecated Expo packages detected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "BottomSheetTextInput (review note)", "issue": "Red-screen 'RNTextInput.default.State.currentlyFocusedInput is not a function' on web preview at app/incident/[id].tsx:121; typed characters are dropped (approx 50% char loss). Backend still receives whatever makes it through so the review completes, but the user-facing note is corrupted on web.", "testID": "review-note-input", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "@gorhom/bottom-sheet BottomSheetTextInput", "issue": "Incompatible with react-native-web — calls RNTextInput.State.currentlyFocusedInput which is undefined on web. Reference: /app/frontend/app/incident/[id].tsx:121. Consider swapping to a plain TextInput inside BottomSheetView for the review-note field (keyboardBehavior still works), or gate the component with Platform.OS === 'web' fallback."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_incidents.py",
+    "/app/test_reports/pytest/incidents_results.xml"
+  ],
+  "action_items": [
+    "Replace BottomSheetTextInput in /app/frontend/app/incident/[id].tsx with a plain TextInput (wrapped in BottomSheetView) or add Platform.OS === 'web' fallback so the web preview no longer crashes and the review note is captured correctly."
+  ],
+  "critical_code_review_comments": [
+    "serialize_incident returns `byId` as a string on new docs but None for seeded ones; Staff scoping query uses str(user['_id']) so seeded incidents (byId=None) are never visible to any Staff — intentional and matches spec, just worth documenting.",
+    "No DELETE endpoint for incidents — not in spec, just noting for future.",
+    "GET /api/stores/{store}/people excludes Company accounts, which is per spec; franchisees of that store ARE included (harrypatel showed up as a person at Croydon in the picker)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_incidents.py (new)",
+    "/app/test_reports/iteration_2.json (new)",
+    "/app/test_reports/pytest/incidents_results.xml (new)"
+  ],
+  "success_rate": {"backend": "100% (15/15 incident tests)", "frontend": "90% — all flows pass; review-note input shows red-screen on web and drops characters"},
+  "seed_data_creation": "Tests create TEST_-prefixed Staff accounts for scoping and then delete them. Transient incidents are left in Mongo (no DELETE endpoint); they are scoped to Croydon/Langwarrin and have TEST_ prefix in descriptions so they are easy to clean up if needed.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run `pytest /app/backend/tests/test_incidents.py -v` to re-check backend. For UI, login harrypatel/password, navigate to Incident Reports (home card or Tools tab → tools-incidents), then exercise new-incident-button → submit-incident-button → tap row → complete-incident-button → review-note-input → confirm-complete-button. The BottomSheetTextInput red-screen is reproducible every time on the web preview — if fixed, verify the typed note is persisted verbatim and that inc-review-note on the detail screen matches.",
+  "rca_of_issue": "BottomSheetTextInput from @gorhom/bottom-sheet depends on react-native's internal TextInputState (RNTextInput.default.State.currentlyFocusedInput) to coordinate keyboard focus. On react-native-web this internal API is not exported, so the component crashes to a redbox the moment it mounts inside the sheet. Fix: swap for a plain `TextInput` inside the BottomSheetView (keyboardBehavior='interactive' still works with native TextInput), or conditionally render based on Platform.OS."
+}

@@ -38,12 +38,13 @@
 - Full native UI: sign-in, tabs (Home/Checks/Manage/Account), New Check form, bottom-sheet add/edit account, template editor.
 - Light + dark mode, Figtree, brand red/black, Ionicons, toasts.
 - Verified: 29/29 backend pytest + full frontend e2e via testing agent.
+- Tools tab (Store Checks / Incident Reports / Training), checks filters sheet, check detail view, header logo.
+- **Incident Reports (2026-06)**: `GET/POST /api/incidents`, `GET /api/incidents/options`, `GET /api/stores/{store}/people`, `POST /api/incidents/{id}/review`. List with Pending/Completed sections; new form (store, urgency Low→Critical, type, multi-select involved people from store, date/time, location, description ≥10 chars, actions, follow-up switch); detail screen; Manager/Franchisee/Company can mark completed with optional note. Staff see only own reports. Labels in Australia/Melbourne time. Verified 15/15 pytest (`backend/tests/test_incidents.py`) + e2e.
 
 ## Backlog / Remaining
-- **P1**: Incident Reports module (log accident/injury/issue). Training module (courses/guides).
-- **P2**: Date picker for DOB; check detail view with the actual recorded readings; search in checks list.
+- **P1**: Training module (courses/guides) — still a placeholder at `app/training/index.tsx`.
+- **P2**: Date picker for DOB and incident date/time (currently text fields); search in checks list.
 - **P2**: Native tabs (NativeTabs) on iOS 26+ (currently classic Tabs for all platforms due to role-conditional tabs).
 
 ## Next Tasks
-- Build Incident Reports as a real module (list + create form) mirroring Store Checks.
-- Add a check-detail screen showing each reading/item value.
+- Build Training module.

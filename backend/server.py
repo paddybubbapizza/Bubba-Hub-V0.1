@@ -9,7 +9,10 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Any, Dict, Annotated
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from bson import ObjectId
+
+LOCAL_TZ = ZoneInfo("Australia/Melbourne")
 import bcrypt
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -118,9 +121,45 @@ SEED_CHECKS = [
     {"store": "Tarneit", "type": "Cooking Temperature Checks", "shift": "", "by": "Ellie", "dateLabel": "Yesterday 6:30pm", "done": 3, "total": 3, "bad": 0, "status": "approved", "rev": "Paddy Shepherd"},
 ]
 
+SEED_INCIDENTS = [
+    {"store": "Croydon", "urgency": "High", "type": "Injury", "involved": [], "occurredAt": "Today 11:20am",
+     "location": "Make line", "description": "Jake cut his hand on the dough cutter while prepping. First aid applied and bleeding stopped after 10 minutes.",
+     "actions": "First aid kit used, Jake sent home for the rest of shift.", "followUp": True, "by": "Jake", "byId": None,
+     "status": "pending", "rev": "", "revNote": "", "hours_ago": 2},
+    {"store": "Boronia", "urgency": "Medium", "type": "Equipment issue", "involved": [], "occurredAt": "Today 9:05am",
+     "location": "Kitchen", "description": "Walk-in fridge compressor making a loud grinding noise. Temperature still in range for now.",
+     "actions": "Moved high-risk stock to prep fridge. Called the repair technician.", "followUp": True, "by": "Tom", "byId": None,
+     "status": "pending", "rev": "", "revNote": "", "hours_ago": 4},
+    {"store": "Pakenham", "urgency": "Low", "type": "Customer complaint", "involved": [], "occurredAt": "Yesterday 7:40pm",
+     "location": "Front counter", "description": "Customer complained their order was missing garlic bread. Replacement given at no charge.",
+     "actions": "Refunded the item and apologised.", "followUp": False, "by": "Lily", "byId": None,
+     "status": "completed", "rev": "Garry Singh", "revNote": "Handled well, no further action.", "hours_ago": 26},
+    {"store": "Langwarrin", "urgency": "Critical", "type": "Food safety", "involved": [], "occurredAt": "Yesterday 3:15pm",
+     "location": "Dry store", "description": "Fryer oil batch matched the recalled batch numbers in the supplier email.",
+     "actions": "Oil quarantined and supplier contacted for replacement.", "followUp": True, "by": "Mia", "byId": None,
+     "status": "completed", "rev": "Harry Patel", "revNote": "Replacement oil arriving tomorrow. Logged with head office.", "hours_ago": 30},
+]
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def rel_label(dt: datetime) -> str:
+    """Human label like 'Today 7:05am' / 'Yesterday 3:15pm' / '12 Jun 9:40am'."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    dt = dt.astimezone(LOCAL_TZ)
+    now = datetime.now(LOCAL_TZ)
+    hour = dt.hour % 12 or 12
+    tm = f"{hour}:{dt.minute:02d}{'am' if dt.hour < 12 else 'pm'}"
+    days = (now.date() - dt.date()).days
+    if days <= 0:
+        return f"Today {tm}"
+    if days == 1:
+        return f"Yesterday {tm}"
+    return f"{dt.day} {dt.strftime('%b')} {tm}"
+
 
 def hash_pw(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -242,6 +281,32 @@ class TemplateIn(BaseModel):
     shift: bool = False
 
 
+INCIDENT_URGENCIES = ["Low", "Medium", "High", "Critical"]
+INCIDENT_TYPES = ["Injury", "Equipment issue", "Food safety", "Customer complaint",
+                  "Property damage", "Security or theft", "Event", "Other"]
+
+
+class InvolvedIn(BaseModel):
+    id: str
+    name: str
+
+
+class IncidentIn(BaseModel):
+    store: str
+    urgency: str
+    type: str
+    involved: List[InvolvedIn] = []
+    occurredAt: str = ""
+    location: str = ""
+    description: str
+    actions: str = ""
+    followUp: bool = False
+
+
+class IncidentReviewIn(BaseModel):
+    note: str = ""
+
+
 # ---------------------------------------------------------------------------
 # Seed
 # ---------------------------------------------------------------------------
@@ -295,6 +360,15 @@ async def seed():
             d["created_at"] = datetime.now(timezone.utc)
             docs.append(d)
         await db.checks.insert_many(docs)
+    if await db.incidents.count_documents({}) == 0:
+        docs = []
+        for inc in SEED_INCIDENTS:
+            d = dict(inc)
+            hours = d.pop("hours_ago")
+            d["created_at"] = datetime.now(timezone.utc) - timedelta(hours=hours)
+            d["reviewed_at"] = d["created_at"] + timedelta(hours=1) if d["status"] == "completed" else None
+            docs.append(d)
+        await db.incidents.insert_many(docs)
 
 
 @app.on_event("startup")
@@ -475,6 +549,93 @@ async def review_check(check_id: str, data: ReviewIn, user: dict = Depends(curre
     c["status"] = new_status
     c["rev"] = user["name"]
     return serialize_check(c)
+
+
+# ---------------------------------------------------------------------------
+# Incident reports
+# ---------------------------------------------------------------------------
+def user_stores(user: dict) -> List[str]:
+    return ALL_STORES if user["role"] == ROLE_COMPANY else user.get("stores", [])
+
+
+def serialize_incident(i: dict) -> dict:
+    return {
+        "id": str(i["_id"]), "store": i["store"], "urgency": i["urgency"], "type": i["type"],
+        "involved": i.get("involved", []), "occurredAt": i.get("occurredAt", ""),
+        "location": i.get("location", ""), "description": i["description"],
+        "actions": i.get("actions", ""), "followUp": bool(i.get("followUp", False)),
+        "by": i["by"], "byId": i.get("byId"), "dateLabel": rel_label(i["created_at"]),
+        "status": i["status"], "rev": i.get("rev", ""), "revNote": i.get("revNote", ""),
+        "reviewedLabel": rel_label(i["reviewed_at"]) if i.get("reviewed_at") else "",
+    }
+
+
+@api_router.get("/stores/{store}/people")
+async def store_people(store: str, user: dict = Depends(current_user)):
+    """People registered to a store (for the 'who was involved' picker)."""
+    if store not in user_stores(user):
+        raise HTTPException(status_code=403, detail="That store is not yours.")
+    people = await db.users.find({"deleted_at": None, "active": True, "stores": store,
+                                  "role": {"$ne": ROLE_COMPANY}}).sort("name", 1).to_list(1000)
+    return [{"id": str(p["_id"]), "name": p["name"], "role": p["role"]} for p in people]
+
+
+@api_router.get("/incidents/options")
+async def incident_options(user: dict = Depends(current_user)):
+    return {"urgencies": INCIDENT_URGENCIES, "types": INCIDENT_TYPES}
+
+
+@api_router.get("/incidents")
+async def get_incidents(user: dict = Depends(current_user)):
+    query: Dict[str, Any] = {"store": {"$in": user_stores(user)}}
+    if user["role"] == ROLE_STAFF:
+        query["byId"] = str(user["_id"])
+    docs = await db.incidents.find(query).sort("created_at", -1).to_list(1000)
+    return [serialize_incident(d) for d in docs]
+
+
+@api_router.post("/incidents")
+async def create_incident(data: IncidentIn, user: dict = Depends(current_user)):
+    if data.store not in user_stores(user):
+        raise HTTPException(status_code=403, detail="You cannot report an incident for that store.")
+    if data.urgency not in INCIDENT_URGENCIES:
+        raise HTTPException(status_code=400, detail="Choose an urgency level.")
+    if data.type not in INCIDENT_TYPES:
+        raise HTTPException(status_code=400, detail="Choose an incident type.")
+    description = data.description.strip()
+    if len(description) < 10:
+        raise HTTPException(status_code=400, detail="Describe what happened in at least 10 characters.")
+    doc = {
+        "store": data.store, "urgency": data.urgency, "type": data.type,
+        "involved": [{"id": p.id, "name": p.name} for p in data.involved],
+        "occurredAt": data.occurredAt.strip(), "location": data.location.strip(),
+        "description": description, "actions": data.actions.strip(), "followUp": data.followUp,
+        "by": user["name"], "byId": str(user["_id"]), "status": "pending", "rev": "", "revNote": "",
+        "created_at": datetime.now(timezone.utc), "reviewed_at": None,
+    }
+    res = await db.incidents.insert_one(doc)
+    doc["_id"] = res.inserted_id
+    return serialize_incident(doc)
+
+
+@api_router.post("/incidents/{incident_id}/review")
+async def review_incident(incident_id: str, data: IncidentReviewIn, user: dict = Depends(current_user)):
+    if user["role"] == ROLE_STAFF:
+        raise HTTPException(status_code=403, detail="You cannot review incident reports.")
+    if not ObjectId.is_valid(incident_id):
+        raise HTTPException(status_code=404, detail="Report not found.")
+    inc = await db.incidents.find_one({"_id": ObjectId(incident_id)})
+    if not inc:
+        raise HTTPException(status_code=404, detail="Report not found.")
+    if inc["store"] not in user_stores(user):
+        raise HTTPException(status_code=403, detail="That report is not for your store.")
+    if inc["status"] == "completed":
+        raise HTTPException(status_code=400, detail="This report has already been completed.")
+    patch = {"status": "completed", "rev": user["name"], "revNote": data.note.strip(),
+             "reviewed_at": datetime.now(timezone.utc)}
+    await db.incidents.update_one({"_id": inc["_id"]}, {"$set": patch})
+    inc.update(patch)
+    return serialize_incident(inc)
 
 
 # ---------------------------------------------------------------------------
