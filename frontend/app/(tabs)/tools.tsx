@@ -3,24 +3,28 @@ import { useRouter } from "expo-router";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { Header } from "@/src/components/Header";
+import { useAuth } from "@/src/auth/auth-context";
 import { makeStyles, useTheme, fonts, spacing, radius } from "@/src/theme";
 
 const TOOLS = [
-  { key: "checks", title: "Store Checks", sub: "Daily open and close checklists", icon: "clipboard", to: "/checks" as const },
-  { key: "incidents", title: "Incident Reports", sub: "Log an accident, injury or issue", icon: "warning", to: "/incidents" as const },
-  { key: "training", title: "Training", sub: "Courses and how-to guides", icon: "school", to: "/training" as const },
+  { key: "checks", title: "Store Checks", sub: "Daily open and close checklists", icon: "clipboard", to: "/checks" as const, manage: false },
+  { key: "incidents", title: "Incident Reports", sub: "Log an accident, injury or issue", icon: "warning", to: "/incidents" as const, manage: false },
+  { key: "training", title: "Training", sub: "Courses and how-to guides", icon: "school", to: "/training" as const, manage: false },
+  { key: "announcements", title: "Announcements", sub: "Post updates to your team", icon: "megaphone", to: "/announcements" as const, manage: true },
 ];
 
 export default function Tools() {
+  const { user } = useAuth();
   const router = useRouter();
   const styles = useStyles();
   const { colors } = useTheme();
+  const tools = TOOLS.filter((t) => !t.manage || user?.role !== "Staff");
 
   return (
     <View style={styles.container}>
       <Header title="Tools" subtitle="Everything you need on shift" />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {TOOLS.map((a) => (
+        {tools.map((a) => (
           <Pressable
             key={a.key}
             style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}

@@ -48,6 +48,12 @@ export default function Accounts() {
     return myStores;
   }, [role, allStoreNames, myStores]);
 
+  const { data: preview } = useQuery({
+    queryKey: ["username-preview", first.trim(), last.trim()],
+    queryFn: () => api<{ username: string }>(`/accounts/username-preview?first=${encodeURIComponent(first)}&last=${encodeURIComponent(last)}`),
+    enabled: mode === "add" && !!first.trim() && !!last.trim(),
+  });
+
   const openAdd = useCallback(() => {
     setMode("add");
     setEditId(null);
@@ -208,7 +214,17 @@ export default function Accounts() {
               autoCapitalize="none"
               testID="sheet-username"
             />
-          ) : null}
+          ) : (
+            <View style={styles.field}>
+              <Text style={styles.label}>Username</Text>
+              <View style={styles.usernameBox}>
+                <Ionicons name="at" size={16} color={colors.muted} />
+                <Text style={[styles.usernameText, !preview?.username && styles.usernamePlaceholder]} testID="sheet-username-preview">
+                  {preview?.username || "Generated from the first and last name"}
+                </Text>
+              </View>
+            </View>
+          )}
 
           {role === "Company account" ? (
             <Text style={styles.note}>Company accounts can access all stores.</Text>
@@ -297,6 +313,19 @@ const useStyles = makeStyles((colors) => ({
   field: { gap: spacing.xs },
   label: { fontFamily: fonts.medium, fontSize: 14, color: colors.onSurface },
   note: { fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
+  usernameBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceTertiary,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    paddingVertical: 11,
+    paddingHorizontal: spacing.md,
+  },
+  usernameText: { fontFamily: fonts.medium, fontSize: 16, color: colors.onSurface },
+  usernamePlaceholder: { fontFamily: fonts.regular, fontSize: 14, color: colors.muted },
   wrapRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   pick: {
     paddingVertical: 8,

@@ -19,12 +19,47 @@ export type User = {
 export type Store = { name: string; owner: string };
 
 export type Announcement = {
+  id: string;
   title: string;
-  tag: string;
-  dateLabel: string;
-  urgent: boolean;
   body: string;
+  urgency: string;
+  category: string;
+  tags: string[];
+  audienceRoles: string[];
+  stores: string[];
+  compulsory: boolean;
+  attachments: FileRef[];
+  author: string;
+  authorRole: string;
+  dateLabel: string;
+  labels: string[];
+  read: boolean;
+  canEdit: boolean;
+  readCount: number;
 };
+
+export type AnnouncementOptions = { urgencies: string[]; categories: string[]; roles: string[] };
+
+export type FileRef = {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+  url: string;
+  isImage: boolean;
+};
+
+export type TrainingTask = { key: string; name: string; desc: string };
+export type TrainingCategory = { key: string; name: string; icon: string; tasks: TrainingTask[] };
+export type TrainingPerson = { id: string; name: string; role: string; stores: string[]; done: number; total: number };
+export type TrainingProgress = {
+  user: { id: string; name: string; role: string };
+  canEdit: boolean;
+  done: Record<string, { by: string; dateLabel: string }>;
+};
+
+export type DueItem = { type: string; shift: string; freq: "daily" | "monthly"; label: string; done: boolean };
+export type StoreDue = { store: string; pending: number; items: DueItem[] };
 
 export type CheckStatus = "awaiting" | "approved" | "returned";
 
@@ -38,6 +73,7 @@ export type Check = {
   type: string;
   shift: string;
   by: string;
+  byId: string | null;
   dateLabel: string;
   done: number;
   total: number;
@@ -46,6 +82,7 @@ export type Check = {
   rev: string;
   k: "t" | "l";
   entries: CheckEntry[];
+  modifiedBy: string;
 };
 
 export type IncidentStatus = "pending" | "completed";
@@ -63,6 +100,7 @@ export type Incident = {
   description: string;
   actions: string;
   followUp: boolean;
+  attachments: FileRef[];
   by: string;
   byId: string | null;
   dateLabel: string;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, Switch, Text, View } from "react-native";
 import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -8,12 +8,14 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { api } from "@/src/api/client";
 import { useAuth } from "@/src/auth/auth-context";
+import { AttachmentPicker } from "@/src/components/Attachments";
+import { DateTimeField, fmtDate, fmtTime } from "@/src/components/DateTimeField";
 import { Header } from "@/src/components/Header";
 import { useUrgencyColor } from "@/src/components/IncidentBits";
 import { Button, Field } from "@/src/components/ui";
 import { useToast } from "@/src/components/Toast";
 import { makeStyles, useTheme, fonts, spacing, radius } from "@/src/theme";
-import type { Incident, IncidentOptions, Person } from "@/src/types";
+import type { FileRef, Incident, IncidentOptions, Person } from "@/src/types";
 
 const URGENCY_HINT: Record<string, string> = {
   Low: "Minor issue, no one hurt, no risk to trading.",
@@ -21,16 +23,6 @@ const URGENCY_HINT: Record<string, string> = {
   High: "Someone was hurt or trading is affected today.",
   Critical: "Serious injury, food safety risk or store must close.",
 };
-
-function nowDate() {
-  const d = new Date();
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
-}
-
-function nowTime() {
-  const d = new Date();
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
 
 export default function NewIncident() {
   const { user } = useAuth();
@@ -54,8 +46,8 @@ export default function NewIncident() {
   const [urgency, setUrgency] = useState<string>("Medium");
   const [type, setType] = useState<string>("");
   const [involved, setInvolved] = useState<Person[]>([]);
-  const [date, setDate] = useState(nowDate());
-  const [time, setTime] = useState(nowTime());
+  const [occurred, setOccurred] = useState(new Date());
+  const [photos, setPhotos] = useState<FileRef[]>([]);
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [actions, setActions] = useState("");
@@ -98,7 +90,8 @@ export default function NewIncident() {
       urgency,
       type,
       involved,
-      occurredAt: `${date.trim()} ${time.trim()}`.trim(),
+      occurredAt: `${fmtDate(occurred)} ${fmtTime(occurred)}`,
+      attachments: photos.map((p) => p.id),
       location,
       description,
       actions,
@@ -210,32 +203,7 @@ export default function NewIncident() {
         {/* When & where */}
         <View style={styles.block}>
           <Text style={styles.label}>When did it happen?</Text>
-          <View style={styles.twoCol}>
-            <View style={styles.col}>
-              <TextInput
-                style={styles.input}
-                value={date}
-                onChangeText={setDate}
-                placeholder="DD/MM/YYYY"
-                placeholderTextColor={colors.muted}
-                keyboardType="numbers-and-punctuation"
-                testID="inc-date"
-              />
-              <Text style={styles.subLabel}>Date</Text>
-            </View>
-            <View style={styles.col}>
-              <TextInput
-                style={styles.input}
-                value={time}
-                onChangeText={setTime}
-                placeholder="HH:MM"
-                placeholderTextColor={colors.muted}
-                keyboardType="numbers-and-punctuation"
-                testID="inc-time"
-              />
-              <Text style={styles.subLabel}>Time (24hr)</Text>
-            </View>
-          </View>
+          <DateTimeField value={occurred} onChange={setOccurred} testID="inc-when" />
         </View>
 
         <Field
@@ -271,6 +239,14 @@ export default function NewIncident() {
           testID="inc-actions"
         />
 
+        <View style={styles.block}>
+          <Text style={styles.label}>
+            Photos <Text style={styles.optional}>(optional)</Text>
+          </Text>
+          <Text style={styles.hint}>A photo of the injury, spill or broken equipment helps whoever reviews this.</Text>
+          <AttachmentPicker files={photos} onChange={setPhotos} photosOnly max={4} testID="inc-photos" />
+        </View>
+
         <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.label}>Follow-up needed</Text>
@@ -305,7 +281,6 @@ const useStyles = makeStyles((colors) => ({
   block: { gap: spacing.sm },
   label: { fontFamily: fonts.medium, fontSize: 14, color: colors.onSurface },
   optional: { fontFamily: fonts.regular, color: colors.muted },
-  subLabel: { fontFamily: fonts.regular, fontSize: 12, color: colors.muted },
   hint: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted },
   single: { fontFamily: fonts.semibold, fontSize: 18, color: colors.onSurface },
   wrapRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
@@ -336,19 +311,6 @@ const useStyles = makeStyles((colors) => ({
   box: { width: 24, height: 24, borderRadius: radius.sm, borderWidth: 2, borderColor: colors.borderStrong, alignItems: "center", justifyContent: "center" },
   boxOn: { backgroundColor: colors.brand, borderColor: colors.brand },
 
-  twoCol: { flexDirection: "row", gap: spacing.md },
-  col: { flex: 1, gap: spacing.xs },
-  input: {
-    fontFamily: fonts.regular,
-    fontSize: 16,
-    color: colors.onSurface,
-    backgroundColor: colors.surfaceSecondary,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingVertical: 11,
-    paddingHorizontal: spacing.md,
-  },
   multiline: { minHeight: 120, paddingTop: 11 },
   multilineShort: { minHeight: 80, paddingTop: 11 },
 

@@ -9,6 +9,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import { api } from "@/src/api/client";
 import { useAuth } from "@/src/auth/auth-context";
 import { Header } from "@/src/components/Header";
+import { AttachmentList } from "@/src/components/Attachments";
 import { IncidentStatusBadge, UrgencyPill } from "@/src/components/IncidentBits";
 import { Button, Card, Pill } from "@/src/components/ui";
 import { useToast } from "@/src/components/Toast";
@@ -70,6 +71,13 @@ export default function IncidentDetail() {
             <Section label="When" value={inc.occurredAt || "Not recorded"} />
             <Section label="Where in the store" value={inc.location || "Not recorded"} />
             <Section label="Actions taken so far" value={inc.actions || "None recorded"} />
+
+            {inc.attachments.length > 0 ? (
+              <View style={styles.block}>
+                <Text style={styles.label}>Photos</Text>
+                <AttachmentList files={inc.attachments} />
+              </View>
+            ) : null}
 
             <View style={styles.block}>
               <Text style={styles.label}>Who was involved</Text>

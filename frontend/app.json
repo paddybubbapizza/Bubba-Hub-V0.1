@@ -9,14 +9,19 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emergent.webtomobile.pb6ng9"
+      "bundleIdentifier": "com.emergent.webtomobile.pb6ng9",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Photograph injuries, spills or broken equipment for incident reports",
+        "NSPhotoLibraryUsageDescription": "Attach photos and files to incident reports and announcements"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.emergent.webtomobile.pb6ng9"
+      "package": "com.emergent.webtomobile.pb6ng9",
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_MEDIA_IMAGES"]
     },
     "web": {
       "bundler": "metro",
@@ -38,7 +43,8 @@
       "expo-image",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-status-bar"
+      "expo-status-bar",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

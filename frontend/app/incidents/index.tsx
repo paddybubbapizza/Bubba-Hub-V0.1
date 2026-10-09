@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -18,12 +18,16 @@ export default function Incidents() {
   const styles = useStyles();
   const { colors } = useTheme();
 
-  const storesText = user?.co ? "Company access" : (user?.stores ?? []).join(" · ");
+  const storesText = user?.co ? "Company Access" : (user?.stores ?? []).join(" · ");
+  const stores = user?.stores ?? [];
+  const [storeFilter, setStoreFilter] = useState<string>("All");
 
-  const { data: incidents = [], isLoading, refetch, isRefetching } = useQuery({
+  const { data: all = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["incidents"],
     queryFn: () => api<Incident[]>("/incidents"),
   });
+  const incidents = useMemo(() => (storeFilter === "All" ? all : all.filter((i) => i.store === storeFilter)), [all, storeFilter]);
+  const countFor = (s: string) => (s === "All" ? all.length : all.filter((i) => i.store === s).length);
 
   const pending = useMemo(() => incidents.filter((i) => i.status === "pending"), [incidents]);
   const completed = useMemo(() => incidents.filter((i) => i.status === "completed"), [incidents]);
@@ -59,6 +63,27 @@ export default function Incidents() {
   return (
     <View style={styles.container}>
       <Header title="Incident Reports" subtitle={storesText} showBack onBack={() => router.back()} />
+
+      {stores.length > 1 ? (
+        <View style={styles.filters}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+            {["All", ...stores].map((s) => {
+              const on = storeFilter === s;
+              const n = countFor(s);
+              return (
+                <Pressable key={s} onPress={() => setStoreFilter(s)} style={[styles.chip, on && styles.chipOn]} testID={`incident-store-${s}`}>
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{s === "All" ? "All stores" : s}</Text>
+                  {n > 0 ? (
+                    <View style={[styles.chipBadge, on && styles.chipBadgeOn]}>
+                      <Text style={[styles.chipBadgeText, on && styles.chipBadgeTextOn]}>{n}</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -107,6 +132,16 @@ export default function Incidents() {
 
 const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
+  filters: { backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
+  chipRow: { gap: spacing.sm, paddingHorizontal: spacing.lg, alignItems: "center", height: 56 },
+  chip: { flexDirection: "row", alignItems: "center", gap: spacing.xs, height: 36, paddingHorizontal: spacing.lg, borderRadius: radius.pill, borderWidth: 2, borderColor: colors.brand },
+  chipOn: { backgroundColor: colors.brand },
+  chipText: { fontFamily: fonts.medium, fontSize: 14, color: colors.brand },
+  chipTextOn: { color: colors.onBrand },
+  chipBadge: { minWidth: 20, height: 20, borderRadius: radius.pill, paddingHorizontal: 5, backgroundColor: colors.brand, alignItems: "center", justifyContent: "center" },
+  chipBadgeOn: { backgroundColor: colors.onBrand },
+  chipBadgeText: { fontFamily: fonts.semibold, fontSize: 11, color: colors.onBrand },
+  chipBadgeTextOn: { color: colors.brand },
   scroll: { padding: spacing.lg, paddingBottom: spacing["3xl"], gap: spacing.sm },
   sectionHead: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.sm },
   sectionTitle: { fontFamily: fonts.semibold, fontSize: 17, color: colors.onSurface },

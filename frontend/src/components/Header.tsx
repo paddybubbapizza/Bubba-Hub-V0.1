@@ -18,7 +18,7 @@ type Props = {
 export function Header({ title, subtitle, showBack, onBack, right, logo }: Props) {
   const insets = useSafeAreaInsets();
   const styles = useStyles();
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
 
   return (
     <View style={[styles.wrap, { paddingTop: insets.top + spacing.sm }]}>
@@ -38,13 +38,15 @@ export function Header({ title, subtitle, showBack, onBack, right, logo }: Props
           <View style={styles.titleWrap}>
             {logo ? (
               <View style={styles.logoRow} testID="header-logo">
-                <View style={styles.logoChip}>
-                  <Image
-                    source={require("../../assets/images/bubba-logo.png")}
-                    style={styles.logoImage}
-                    contentFit="contain"
-                  />
-                </View>
+                <Image
+                  source={
+                    scheme === "dark"
+                      ? require("../../assets/images/bubba-logo-dark.png")
+                      : require("../../assets/images/bubba-logo.png")
+                  }
+                  style={styles.logoImage}
+                  contentFit="contain"
+                />
                 <View style={styles.logoDivider} />
                 <Text style={styles.logoText}>Bubba Hub</Text>
               </View>
@@ -86,13 +88,7 @@ const useStyles = makeStyles((colors) => ({
   titleWrap: { flex: 1 },
   title: { fontFamily: fonts.semibold, fontSize: 22, color: colors.onSurfaceSecondary },
   logoRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  logoChip: {
-    backgroundColor: "#ffffff",
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-  },
-  logoImage: { width: 78, height: 24 },
+  logoImage: { width: 88, height: 28 },
   logoDivider: { width: 2, height: 26, backgroundColor: colors.onSurfaceSecondary, borderRadius: 1 },
   logoText: { fontFamily: fonts.extrabold, fontSize: 20, color: colors.onSurfaceSecondary },
   subtitle: { fontFamily: fonts.regular, fontSize: 13, color: colors.muted, marginTop: 2 },

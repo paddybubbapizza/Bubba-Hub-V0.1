@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { useAuth } from "@/src/auth/auth-context";
+import { CompulsoryGate } from "@/src/components/CompulsoryGate";
 import { useTheme, fonts } from "@/src/theme";
 
 export default function TabsLayout() {
@@ -14,6 +15,8 @@ export default function TabsLayout() {
   const canManage = user.role === "Company account" || user.role === "Franchisee";
 
   return (
+    <>
+    <CompulsoryGate />
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -59,5 +62,6 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+    </>
   );
 }

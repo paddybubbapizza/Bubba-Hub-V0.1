@@ -37,7 +37,7 @@ export default function ChecksList() {
 
   const canReview = user?.role !== "Staff";
   const stores = user?.stores ?? [];
-  const storesText = user?.co ? "Company access" : stores.join(" · ");
+  const storesText = user?.co ? "Company Access" : stores.join(" · ");
 
   const { data: checks = [], isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["checks"],
@@ -138,11 +138,11 @@ export default function ChecksList() {
                 <StatusBadge status={c.status} rev={c.rev} />
                 <View style={styles.reviewActions}>
                   <Button title="View" small variant="ghost" icon="eye-outline" onPress={() => router.push(`/check/${c.id}`)} testID={`view-${c.id}`} />
+                  {canReview || (c.byId === user?.id && c.status === "awaiting") ? (
+                    <Button title="Modify" small variant="outline" onPress={() => router.push({ pathname: "/check/new", params: { id: c.id } })} testID={`modify-${c.id}`} />
+                  ) : null}
                   {canReview && c.status === "awaiting" ? (
-                    <>
-                      <Button title="Approve" small onPress={() => review.mutate({ id: c.id, action: "approve" })} testID={`approve-${c.id}`} />
-                      <Button title="Return" small variant="outline" onPress={() => review.mutate({ id: c.id, action: "return" })} testID={`return-${c.id}`} />
-                    </>
+                    <Button title="Approve" small onPress={() => review.mutate({ id: c.id, action: "approve" })} testID={`approve-${c.id}`} />
                   ) : null}
                 </View>
               </View>

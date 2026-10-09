@@ -1,22 +1,41 @@
 import { ScrollView, Text, View } from "react-native";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Ionicons from "@react-native-vector-icons/ionicons";
 
 import { api } from "@/src/api/client";
+import { useAuth } from "@/src/auth/auth-context";
 import { Header } from "@/src/components/Header";
-import { Card, Pill, StatusBadge } from "@/src/components/ui";
+import { Button, Card, Pill, StatusBadge } from "@/src/components/ui";
+import { useToast } from "@/src/components/Toast";
 import { makeStyles, useTheme, fonts, spacing, radius } from "@/src/theme";
 import type { Check, ItemEntry, TempEntry } from "@/src/types";
 
 export default function CheckDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const styles = useStyles();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const { data: checks = [] } = useQuery({ queryKey: ["checks"], queryFn: () => api<Check[]>("/checks") });
   const check = checks.find((c) => c.id === id);
+
+  const canReview = user?.role !== "Staff";
+  const canModify = !!check && (canReview || (check.byId === user?.id && check.status === "awaiting"));
+
+  const approve = useMutation({
+    mutationFn: () => api<Check>(`/checks/${id}/review`, { method: "POST", body: { action: "approve" } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["checks"] });
+      toast("Check approved", "success");
+    },
+    onError: (e: any) => toast(e?.message ?? "Could not approve the check", "error"),
+  });
 
   return (
     <View style={styles.container}>
@@ -35,6 +54,7 @@ export default function CheckDetail() {
             <Text style={styles.meta}>
               {check.store} · {check.by} · {check.dateLabel}
             </Text>
+            {check.modifiedBy ? <Text style={styles.meta}>Modified by {check.modifiedBy}</Text> : null}
             <View style={styles.summaryRow}>
               <StatusBadge status={check.status} rev={check.rev} />
               {check.bad > 0 ? <Pill label={`${check.bad} out of range`} tone="error" /> : null}
@@ -83,12 +103,46 @@ export default function CheckDetail() {
           </View>
         </ScrollView>
       )}
+      {check && (canModify || (canReview && check.status === "awaiting")) ? (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+          {canModify ? (
+            <Button
+              title="Modify"
+              variant="outline"
+              icon="create-outline"
+              style={styles.footerBtn}
+              onPress={() => router.push({ pathname: "/check/new", params: { id: check.id } })}
+              testID="detail-modify-button"
+            />
+          ) : null}
+          {canReview && check.status === "awaiting" ? (
+            <Button
+              title="Approve"
+              icon="checkmark"
+              style={styles.footerBtn}
+              onPress={() => approve.mutate()}
+              loading={approve.isPending}
+              testID="detail-approve-button"
+            />
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const useStyles = makeStyles((colors) => ({
   container: { flex: 1, backgroundColor: colors.surface },
+  footer: {
+    flexDirection: "row",
+    gap: spacing.md,
+    backgroundColor: colors.surfaceSecondary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  footerBtn: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   muted: { fontFamily: fonts.regular, fontSize: 15, color: colors.muted },
   scroll: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing["2xl"] },

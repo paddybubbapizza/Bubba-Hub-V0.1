@@ -12,6 +12,15 @@ export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
+export function getAuthToken() {
+  return authToken;
+}
+
+/** URL for an uploaded file. Web <img> cannot send headers, so the token rides in the query string. */
+export function fileUrl(path: string) {
+  return `${process.env.EXPO_PUBLIC_BACKEND_URL}${path}?token=${authToken ?? ""}`;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {

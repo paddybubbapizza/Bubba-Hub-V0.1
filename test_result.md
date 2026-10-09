@@ -101,3 +101,10 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+## Iteration 3 (main agent) — big batch of features
+Implemented: Announcements module (CRUD, urgency/category/tags/audience roles/stores/compulsory/attachments, read tracking,
+compulsory gate modal), Store check Modify (PATCH /checks/{id}) + Delete + Approve on detail, temperature ± sign toggle,
+Training module (catalogue, per-person progress, manager sign-off with un-tick confirmation), auto username with numeric
+suffix (GET /accounts/username-preview), Home "Pending checks" (GET /checks/due), Incident photos + store filter + date/time
+picker, file upload via Emergent Object Storage (POST /upload, GET /files/{id}?token=), transparent logo, "Company Access".
+Seeded manager/staff accounts (see memory/test_credentials.md). All need testing.
